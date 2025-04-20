@@ -41,6 +41,8 @@ pub struct CommandLine {
 pub enum TaskOption {
     /// Build Quantum OS
     Build,
+    /// Run CI/CD Actions
+    Actions,
     /// Run + Build Quantum OS
     Run,
     /// Run + Build Quantum OS (with multiboot support from qemu)

@@ -393,6 +393,9 @@ async fn main() -> Result<()> {
             };
             run_object_dump(Path::new(&file), ip).await?;
         }
+        cmdline::TaskOption::Actions => {
+            todo!()
+        }
     }
 
     Ok(())
