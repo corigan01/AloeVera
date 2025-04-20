@@ -28,6 +28,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 extern crate alloc;
 use alloc::vec::Vec;
 
+mod bitarray;
+mod compressedbool;
+
+pub use bitarray::*;
+pub use compressedbool::*;
+
 type BackingType = u64;
 
 #[derive(Clone, Debug)]

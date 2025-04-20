@@ -7,3 +7,11 @@ description.workspace = true
 documentation.workspace = true
 
 [dependencies]
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports", "async_futures"] }
+rand = "0.9.1"
+
+[[bench]]
+name = "benchmark"
+harness = false

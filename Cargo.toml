@@ -35,7 +35,8 @@ members = [
   "portals/fs-portal",
   "crates/chloroplast",
   "crates/kinases",
-  "user/aloe-transplant"
+  "user/aloe-transplant",
+  "crates/mem2"
 ]
 
 default-members = ["meta"]
@@ -77,6 +78,7 @@ chloroplast = { path = "crates/chloroplast" }
 kinases = { path = "crates/kinases" }
 vera = { path = "kernel/" }
 aloe-transplant = { path = "user/aloe-transplant" }
+mem2 = { path = "crates/mem2" }
 
 [profile.stage-bootsector]
 inherits = "release"

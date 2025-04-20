@@ -1,0 +1,10 @@
+[package]
+name = "mem2"
+edition = "2024"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+documentation.workspace = true
+license.workspace = true
+
+[dependencies]
