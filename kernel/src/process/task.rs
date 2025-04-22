@@ -275,7 +275,7 @@ pub unsafe fn asm_init(task: *mut ArchStackPtr, init_fn: fn(), ret_call: fn() ->
 }
 
 /// Switch between two tasks given ptrs to their stack ptrs
-#[naked]
+#[unsafe(naked)]
 pub unsafe extern "C" fn asm_switch(from: *mut ArchStackPtr, to: *const ArchStackPtr) {
     unsafe {
         naked_asm!(

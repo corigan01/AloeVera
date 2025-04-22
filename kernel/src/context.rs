@@ -28,7 +28,7 @@ use core::{arch::naked_asm, cell::SyncUnsafeCell};
 pub static KERNEL_RSP_PTR: SyncUnsafeCell<u64> = SyncUnsafeCell::new(0x121212);
 pub static TEMP_USERSPACE_RSP_PTR: SyncUnsafeCell<u64> = SyncUnsafeCell::new(0x121212);
 
-#[naked]
+#[unsafe(naked)]
 pub unsafe extern "C" fn kernel_entry() {
     unsafe {
         naked_asm!(

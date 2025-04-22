@@ -433,7 +433,7 @@ pub fn fire_debug_int() {
 macro_rules! raw_int_asm {
     (NO ERROR: $irq_id: literal, $ident: ident, $calling: ident) => {
         /// Interrupt wrapper (NO ERROR)
-        #[naked]
+        #[unsafe(naked)]
         pub(crate) extern "C" fn $ident() {
             extern "C" fn handler(context: *const $crate::registers::ProcessContext) {
                 let info = $crate::idt64::InterruptInfo::convert_from_ne($irq_id, context);
@@ -491,7 +491,7 @@ macro_rules! raw_int_asm {
     };
     (ERROR: $irq_id: literal, $ident: ident, $calling: ident) => {
         /// Interrupt wrapper (YES ERROR)
-        #[naked]
+        #[unsafe(naked)]
         pub(crate) extern "C" fn $ident() {
             extern "C" fn handler(context: *const $crate::registers::ProcessContext) {
                 let info = ::arch::idt64::InterruptInfo::convert_from_e($irq_id, context);
