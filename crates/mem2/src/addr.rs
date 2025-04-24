@@ -28,10 +28,12 @@ use core::{
     sync::atomic::{AtomicU8, Ordering},
 };
 
+// This is to make sure no one else can impl the `AddrAlign` and `AddrKind` traits!
 pub(crate) mod _priv {
     pub trait Sealed {}
 }
 
+/// Generic Alignment Specifier
 pub trait AddrAlign: _priv::Sealed {
     const ALIGN: usize;
 }
@@ -48,6 +50,8 @@ pub trait AddrKind: _priv::Sealed + Debug {
         (addr >> shift) == 0 || (addr >> shift) == (usize::MAX >> shift)
     }
 }
+
+pub trait AddrPage: AddrAlign {}
 
 #[derive(Debug)]
 pub struct Unaligned;
@@ -88,6 +92,10 @@ impl AddrKind for LogicalAddr {
         logical_addr_width_bits()
     }
 }
+
+impl AddrPage for Aligned<PAGE_4K> {}
+impl AddrPage for Aligned<PAGE_2M> {}
+impl AddrPage for Aligned<PAGE_1G> {}
 
 pub type PhysAddrWidthBits = u8;
 pub type LogicalAddrWidthBits = u8;
@@ -144,7 +152,7 @@ pub enum AddrError<Kind: AddrKind> {
 }
 
 #[repr(transparent)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy)]
 pub struct Addr<Kind: AddrKind, Align: AddrAlign = Unaligned> {
     addr: usize,
     _ph: PhantomData<(Kind, Align)>,
@@ -152,6 +160,21 @@ pub struct Addr<Kind: AddrKind, Align: AddrAlign = Unaligned> {
 
 pub type PhysAddr<Align = Unaligned> = Addr<PhysicalAddr, Align>;
 pub type VirtAddr<Align = Unaligned> = Addr<LogicalAddr, Align>;
+
+pub const PAGE_4K: usize = 4096;
+pub const PAGE_2M: usize = PAGE_4K * 512;
+pub const PAGE_1G: usize = PAGE_2M * 512;
+
+pub type PhysPage<const ALIGN: usize> = Addr<PhysicalAddr, Aligned<ALIGN>>;
+pub type VirtPage<const ALIGN: usize> = Addr<LogicalAddr, Aligned<ALIGN>>;
+
+pub type PhysPage4K = Addr<PhysAddr, Aligned<PAGE_4K>>;
+pub type PhysPage2M = Addr<PhysAddr, Aligned<PAGE_2M>>;
+pub type PhysPage1G = Addr<PhysAddr, Aligned<PAGE_1G>>;
+
+pub type VirtPage4K = Addr<LogicalAddr, Aligned<PAGE_4K>>;
+pub type VirtPage2M = Addr<LogicalAddr, Aligned<PAGE_2M>>;
+pub type VirtPage1G = Addr<LogicalAddr, Aligned<PAGE_1G>>;
 
 impl<Kind: AddrKind> Addr<Kind, Unaligned> {
     #[inline]
@@ -197,6 +220,11 @@ impl<Kind: AddrKind, Align: AddrAlign> Addr<Kind, Align> {
     const ADDR_ALIGNMENT: usize = Align::ALIGN;
 
     fn verify_addr(addr: usize) -> Result<(), AddrError<Kind>> {
+        assert!(
+            Self::ADDR_ALIGNMENT.is_power_of_two(),
+            "Addr Alignment must be a power of 2!"
+        );
+
         // Check that the address is aligned
         if addr & (Self::ADDR_ALIGNMENT - 1) != 0 {
             return Err(AddrError::InvalidAlignment {
@@ -218,6 +246,92 @@ impl<Kind: AddrKind, Align: AddrAlign> Addr<Kind, Align> {
 
     pub const fn get(&self) -> usize {
         self.addr
+    }
+
+    #[inline]
+    pub const fn is_aligned_to(&self, alignment: usize) -> bool {
+        debug_assert!(
+            Self::ADDR_ALIGNMENT.is_power_of_two(),
+            "Addr Alignment must be a power of 2!"
+        );
+        debug_assert!(
+            alignment.is_power_of_two(),
+            "Addr Alignment must be a power of 2!"
+        );
+
+        Self::ADDR_ALIGNMENT >= alignment
+    }
+
+    pub const fn as_ptr<T>(&self) -> *const T {
+        assert!(self.is_aligned_to(align_of::<T>()));
+        self.get() as *const T
+    }
+
+    pub const fn as_mut_ptr<T>(&self) -> *mut T {
+        assert!(self.is_aligned_to(align_of::<T>()));
+        self.get() as *mut T
+    }
+}
+impl<Kind: AddrKind> Addr<Kind, Aligned<PAGE_4K>> {
+    pub const unsafe fn page_4k_unchecked(page_id: usize) -> Self {
+        unsafe { Self::aligned_unchecked(page_id * Self::ADDR_ALIGNMENT) }
+    }
+
+    pub fn page_4k(page_id: usize) -> Self {
+        Self::aligned(page_id * Self::ADDR_ALIGNMENT)
+    }
+}
+
+impl<Kind: AddrKind> Addr<Kind, Aligned<PAGE_2M>> {
+    pub const unsafe fn page_2m_unchecked(page_id: usize) -> Self {
+        unsafe { Self::aligned_unchecked(page_id * Self::ADDR_ALIGNMENT) }
+    }
+
+    pub fn page_2m(page_id: usize) -> Self {
+        Self::aligned(page_id * Self::ADDR_ALIGNMENT)
+    }
+}
+
+impl<Kind: AddrKind> Addr<Kind, Aligned<PAGE_1G>> {
+    pub const unsafe fn page_1g_unchecked(page_id: usize) -> Self {
+        unsafe { Self::aligned_unchecked(page_id * Self::ADDR_ALIGNMENT) }
+    }
+
+    pub fn page_1g(page_id: usize) -> Self {
+        Self::aligned(page_id * Self::ADDR_ALIGNMENT)
+    }
+}
+
+impl<Kind: AddrKind, Page> Addr<Kind, Page>
+where
+    Page: AddrPage + AddrAlign,
+{
+    pub const fn page_id(&self) -> usize {
+        self.addr / Self::ADDR_ALIGNMENT
+    }
+}
+
+impl<KindO: AddrKind, AlignO: AddrAlign, KindI: AddrKind, AlignI: AddrAlign>
+    PartialEq<Addr<KindI, AlignI>> for Addr<KindO, AlignO>
+{
+    fn eq(&self, other: &Addr<KindI, AlignI>) -> bool {
+        self.addr == other.addr
+    }
+}
+
+impl<KindO: AddrKind, AlignO: AddrAlign> Eq for Addr<KindO, AlignO> {}
+
+impl<KindO: AddrKind, AlignO: AddrAlign, KindI: AddrKind, AlignI: AddrAlign>
+    PartialOrd<Addr<KindI, AlignI>> for Addr<KindO, AlignO>
+{
+    fn partial_cmp(&self, other: &Addr<KindI, AlignI>) -> Option<core::cmp::Ordering> {
+        self.addr.partial_cmp(&other.addr)
+    }
+}
+
+impl<KindO: AddrKind, AlignO: AddrAlign> Ord for Addr<KindO, AlignO> {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+        self.addr.cmp(&other.addr)
     }
 }
 
@@ -256,6 +370,10 @@ mod test {
         _ = PhysAddr::unaligned(100);
         _ = PhysAddr::<Aligned<8>>::try_aligned(100).expect_err("Expected this to fail!");
         _ = PhysAddr::<Aligned<8>>::aligned(16);
+
+        _ = VirtAddr::unaligned(100);
+        _ = VirtAddr::<Aligned<8>>::try_aligned(100).expect_err("Expected this to fail!");
+        _ = VirtAddr::<Aligned<8>>::aligned(16);
     }
 
     #[test]
@@ -266,5 +384,31 @@ mod test {
         LOGICAL_ADDR_WIDTH_BITS.store(48, Ordering::SeqCst);
 
         _ = PhysAddr::unaligned(usize::MAX ^ (1 << 63));
+    }
+
+    #[test]
+    fn test_page_sameness() {
+        let addr = VirtAddr::<Aligned<4096>>::aligned(40960 /* The 10th page  */);
+        let page = VirtPage::page_4k(10 /* Also, the 10th page */);
+
+        assert_eq!(addr, page);
+
+        let addr_non_aligned =
+            VirtAddr::unaligned(40960 /* Can even compare with non-aligned types! */);
+        assert_eq!(addr_non_aligned, page);
+    }
+
+    #[test]
+    fn check_page_sized_items() {
+        for i in 0..1_000 {
+            let page = VirtPage::page_4k(i);
+            assert_eq!(page.page_id(), i);
+
+            let page = VirtPage::page_2m(i);
+            assert_eq!(page.page_id(), i);
+
+            let page = VirtPage::page_1g(i);
+            assert_eq!(page.page_id(), i);
+        }
     }
 }
