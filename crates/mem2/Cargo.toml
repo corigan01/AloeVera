@@ -8,3 +8,4 @@ documentation.workspace = true
 license.workspace = true
 
 [dependencies]
+ultraviolet = { workspace = true }

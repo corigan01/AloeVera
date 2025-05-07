@@ -152,7 +152,7 @@ impl CpuidRequest {
             Self::VenderString => (0, 0, 0, 0),
             Self::Feature => (1, 0, 0, 0),
             Self::AddressSize => (0x80000008, 0, 0, 0),
-            _ => todo!("CpuidRequest register pattern is not filled out"),
+            _ => panic!("todo"),
         }
     }
 }

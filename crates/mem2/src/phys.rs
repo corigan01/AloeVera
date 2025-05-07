@@ -22,7 +22,45 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#![no_std]
+use crate::addr::PhysAddr;
+use core::fmt::Debug;
 
-pub mod addr;
-pub mod phys;
+pub mod map;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum MemoryComponent {
+    KernelBin,
+    KernelInitStack,
+    KernelInitHeap,
+    KernelElf,
+    Initfs,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum PhysEntryKind {
+    None,
+    Free,
+    Reserved,
+    Special,
+    AcpiReclaimable,
+    Component(MemoryComponent),
+    Broken,
+}
+
+pub trait PhysMemoryDescriptor: PartialOrd + Clone + Debug {
+    fn phys_kind(&self) -> PhysEntryKind;
+    fn phys_start(&self) -> PhysAddr;
+    fn phys_end(&self) -> PhysAddr;
+
+    fn phys_size(&self) -> usize {
+        let start = self.phys_start();
+        let end = self.phys_end();
+
+        debug_assert!(
+            end.get() > start.get(),
+            "End address must come after start address!"
+        );
+
+        end.addr_distance(start)
+    }
+}

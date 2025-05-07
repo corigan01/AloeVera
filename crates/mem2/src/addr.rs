@@ -53,13 +53,13 @@ pub trait AddrKind: _priv::Sealed + Debug {
 
 pub trait AddrPage: AddrAlign {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Unaligned;
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Aligned<const ALIGN: usize>;
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct PhysicalAddr;
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct LogicalAddr;
 
 impl _priv::Sealed for PhysicalAddr {}
@@ -186,6 +186,14 @@ impl<Kind: AddrKind> Addr<Kind, Unaligned> {
     }
 
     #[inline]
+    pub const fn null_unaligned() -> Self {
+        Self {
+            addr: 0,
+            _ph: PhantomData,
+        }
+    }
+
+    #[inline]
     pub fn unaligned(addr: usize) -> Self {
         Self::try_unaligned(addr).expect("Unable to verify provided address")
     }
@@ -202,6 +210,14 @@ impl<Kind: AddrKind, const ALIGN: usize> Addr<Kind, Aligned<ALIGN>> {
     pub const unsafe fn aligned_unchecked(addr: usize) -> Self {
         Self {
             addr,
+            _ph: PhantomData,
+        }
+    }
+
+    #[inline]
+    pub const fn null_aligned() -> Self {
+        Self {
+            addr: 0,
             _ph: PhantomData,
         }
     }
@@ -270,6 +286,13 @@ impl<Kind: AddrKind, Align: AddrAlign> Addr<Kind, Align> {
     pub const fn as_mut_ptr<T>(&self) -> *mut T {
         assert!(self.is_aligned_to(align_of::<T>()));
         self.get() as *mut T
+    }
+
+    pub fn addr_distance(&self, rhs: Self) -> usize {
+        let usized_lhs = self.get();
+        let usized_rhs = rhs.get();
+
+        usized_rhs.abs_diff(usized_lhs)
     }
 }
 impl<Kind: AddrKind> Addr<Kind, Aligned<PAGE_4K>> {
