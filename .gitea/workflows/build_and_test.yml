@@ -9,7 +9,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
-      - run: apt install gcc llvm
+      - run: apt-get update && apt-get install build-essential -y
       - run: cargo check
 
   build-meta:
