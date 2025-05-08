@@ -22,6 +22,8 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+use ultraviolet::constvec::ConstVec;
+
 use super::{PhysEntryKind, PhysMemoryDescriptor};
 use crate::addr::PhysAddr;
 
@@ -63,15 +65,13 @@ impl PhysMemoryBorder {
 
 #[derive(Clone, Copy)]
 pub struct PhysMemoryMap<const N_BORDERS: usize> {
-    borders: [PhysMemoryBorder; N_BORDERS],
-    len: usize,
+    array: ConstVec<N_BORDERS, PhysMemoryBorder>,
 }
 
 impl<const N_BORDERS: usize> PhysMemoryMap<N_BORDERS> {
     pub const fn new() -> Self {
         Self {
-            borders: [PhysMemoryBorder::null(); N_BORDERS],
-            len: 0,
+            array: ConstVec::new(),
         }
     }
 
@@ -79,14 +79,6 @@ impl<const N_BORDERS: usize> PhysMemoryMap<N_BORDERS> {
     where
         D: PhysMemoryDescriptor,
     {
-        todo!()
-    }
-
-    fn insert_array(&mut self, index: usize, border: PhysMemoryBorder) {
-        todo!()
-    }
-
-    fn remove_array(&mut self, index: usize) -> PhysMemoryBorder {
         todo!()
     }
 }

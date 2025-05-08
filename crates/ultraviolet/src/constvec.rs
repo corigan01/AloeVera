@@ -32,6 +32,25 @@ pub struct ConstVec<const N: usize, T> {
     len: usize,
 }
 
+impl<const N: usize, T: Clone> Clone for ConstVec<N, T> {
+    fn clone(&self) -> Self {
+        let mut data = [const { MaybeUninit::uninit() }; N];
+
+        // Clone each element
+        data.iter_mut()
+            .take(self.len)
+            .zip(self.data.iter())
+            .for_each(|(n, p)| *n = MaybeUninit::new(unsafe { p.assume_init_ref() }.clone()));
+
+        Self {
+            data,
+            len: self.len,
+        }
+    }
+}
+
+impl<const N: usize, T: Copy> Copy for ConstVec<N, T> {}
+
 impl<const N: usize, T> ConstVec<N, T> {
     pub const fn new() -> Self {
         Self {
