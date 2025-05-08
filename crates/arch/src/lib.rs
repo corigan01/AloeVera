@@ -25,7 +25,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #![no_std]
 #![feature(abi_x86_interrupt)]
-#![feature(naked_functions)]
 
 pub mod gdt;
 pub mod idt64;
