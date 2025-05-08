@@ -1,0 +1,29 @@
+on: [push, pull_request]
+
+name: Rust
+
+jobs:
+  check:
+    name: Check
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - run: sudo apt install build-essential
+      - run: cargo check
+
+  build-meta:
+    name: Build Meta
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - run: cargo build
+
+  build-os:
+    name: Build OS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - run: cargo run -- build
